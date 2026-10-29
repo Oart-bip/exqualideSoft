@@ -1,0 +1,4 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\{Customer,Order,Product}; use Illuminate\Http\Request; use Illuminate\Support\Facades\DB;
+class OrderController extends Controller { public function index(){return view('orders.index',['orders'=>Order::with(['customer','product'])->latest()->paginate(5)]);} public function create(){return view('orders.form',['customers'=>Customer::all(),'products'=>Product::all()]);} public function store(Request $r){$d=$r->validate(['customer_id'=>'required|exists:customers,id','product_id'=>'required|exists:products,id','quantity'=>'required|integer|min:1']);$p=Product::findOrFail($d['product_id']);if($d['quantity']>$p->stock)return back()->withErrors(['quantity'=>'Estoque insuficiente.'])->withInput();DB::transaction(function()use($d,$p){Order::create($d+['status'=>'registrado']);$p->decrement('stock',$d['quantity']);});return redirect()->route('pedidos.index')->with('success','Pedido registrado e estoque atualizado.');}}

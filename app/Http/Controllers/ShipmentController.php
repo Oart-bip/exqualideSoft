@@ -1,0 +1,4 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\{Order,Shipment}; use Illuminate\Http\Request;
+class ShipmentController extends Controller { public function index(){return view('shipments.index',['shipments'=>Shipment::with('order')->latest()->paginate(5)]);} public function create(){return view('shipments.form',['orders'=>Order::all()]);} public function store(Request $r){Shipment::create($this->valid($r)+['status'=>'preparando']);return redirect()->route('fretes.index')->with('success','Frete criado.');} public function update(Request $r,Shipment $shipment){$shipment->update($r->validate(['status'=>'required|in:preparando,enviado,entregue']));return back()->with('success','Status atualizado.');} private function valid(Request $r){return $r->validate(['order_id'=>'required|exists:orders,id','address'=>'required','fee'=>'required|numeric|min:0','expected_date'=>'required|date','tracking_code'=>'required']);}}

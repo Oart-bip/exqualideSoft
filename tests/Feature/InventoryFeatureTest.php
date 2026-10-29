@@ -1,0 +1,9 @@
+<?php
+namespace Tests\Feature;
+use App\Models\{Customer,Product}; use Illuminate\Foundation\Testing\RefreshDatabase; use Tests\TestCase;
+class InventoryFeatureTest extends TestCase { use RefreshDatabase;
+ public function test_home_and_module_routes_are_available():void {$this->get('/')->assertOk();foreach(['/produtos','/clientes','/pedidos','/fretes'] as $route)$this->get($route)->assertOk();$this->get('/nao-existe')->assertNotFound();}
+ public function test_product_validation_and_crud():void {$this->post('/produtos',[])->assertSessionHasErrors(['name','price']);$this->post('/produtos',['name'=>'Teclado','category'=>'Eletrônicos','price'=>80,'stock'=>10,'minimum_stock'=>2])->assertRedirect('/produtos');$this->assertDatabaseHas('products',['name'=>'Teclado']);$p=Product::first();$this->put("/produtos/$p->id",['name'=>'Teclado','category'=>'Eletrônicos','price'=>90,'stock'=>10,'minimum_stock'=>2]);$this->assertDatabaseHas('products',['price'=>90]);}
+ public function test_customer_post_and_delete():void {$this->post('/clientes',['name'=>'João','phone'=>'11900000000','address'=>'Rua A'])->assertRedirect('/clientes');$this->assertDatabaseHas('customers',['name'=>'João']);$c=Customer::first();$this->delete("/clientes/$c->id");$this->assertDatabaseMissing('customers',['id'=>$c->id]);}
+ public function test_order_decreases_stock_and_rejects_insufficient_stock():void {$p=Product::create(['name'=>'Mouse','category'=>'Eletrônicos','price'=>30,'stock'=>10,'minimum_stock'=>2]);$c=Customer::create(['name'=>'Maria','phone'=>'11','address'=>'Rua B']);$this->post('/pedidos',['customer_id'=>$c->id,'product_id'=>$p->id,'quantity'=>3])->assertRedirect('/pedidos');$this->assertDatabaseHas('products',['id'=>$p->id,'stock'=>7]);$this->post('/pedidos',['customer_id'=>$c->id,'product_id'=>$p->id,'quantity'=>99])->assertSessionHasErrors('quantity');$this->assertDatabaseCount('orders',1);}
+}
